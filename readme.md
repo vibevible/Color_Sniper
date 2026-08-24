@@ -3,8 +3,8 @@
 #### Locked in. It's a **color picker**, but make it an **FPS sniper rifle**.
 ***
 [New!] - 2026/08/25:
-장전/발사 효과음 추가(Add effect sounds) - using pygame
-발사 시 투명창이 뜨는 버그 수정(fix bug - transparent window)
+-장전/발사 효과음 추가(Add effect sounds) - using pygame
+-발사 시 투명창이 뜨는 버그 수정(fix bug - transparent window)
 ***
 #### 리소스 출처(Resource Credit):
 
