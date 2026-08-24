@@ -1,6 +1,7 @@
 # Color_Sniper
-### "조준 완료." **색상 추출기**지만, FPS 감성의 **저격총**입니다.
-#### Locked in. It's a **color picker**, but make it an **FPS sniper rifle**.
+︻デ═一 - - - - - 𖦏<br>
+"조준 완료." **색상 추출기**지만, FPS 감성의 **저격총**입니다.<br>
+Locked in. It's a **color picker**, but make it an **FPS sniper rifle**.
 ***
 [New!] - 2026/08/25:<br>
 장전/발사 효과음 추가(Add effect sounds) - using pygame<br>
