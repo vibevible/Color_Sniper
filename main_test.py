@@ -139,7 +139,7 @@ class ColorSniper:
         self.fixed_win.config(bg="systemTransparent" if self.root.tk.call('tk', 'windowingsystem') == 'aqua' else "#000001")
         
         try:
-            pil_img = Image.open("gun.png").convert("RGBA")
+            pil_img = Image.open("assets\\gun.png").convert("RGBA")
             self.gun_width, self.gun_height = pil_img.size
             bg_color = (0, 0, 1) 
             
@@ -354,9 +354,9 @@ class ColorSniper:
                 else:
                     rgb = tuple(int(hex_code[j:j+2], 16) for j in (1, 3, 5))
 
-                if os.path.exists("ammo.png"):
-                    ammo_img_main = Image.open("ammo.png").convert("RGBA").resize((20, 38), Image.Resampling.NEAREST)
-                    ammo_img_overlay = Image.open("ammo.png").convert("RGBA").resize((26, 50), Image.Resampling.NEAREST)
+                if os.path.exists("assets\\ammo.png"):
+                    ammo_img_main = Image.open("assets\\ammo.png").convert("RGBA").resize((20, 38), Image.Resampling.NEAREST)
+                    ammo_img_overlay = Image.open("assets\\ammo.png").convert("RGBA").resize((26, 50), Image.Resampling.NEAREST)
 
                     def apply_color(img):
                         """탄환 이미지의 밝은 부분에만 색상을 적용하고, 흰색이면 투명도를 낮춤"""
@@ -427,7 +427,7 @@ class ColorSniper:
             self.show_shoot_effect(mx, my, shot_hex)
 
             mixer.init()
-            mixer.music.load('sniper_rifle.mp3')
+            mixer.music.load('assets\\sniper_rifle.mp3')
             mixer.music.play()
 
             self.shake_gun_effect()
@@ -471,7 +471,7 @@ class ColorSniper:
         rgb = tuple(int(hex_color[j:j+2], 16) for j in (1, 3, 5))
 
         try:
-            base_img = Image.open("shoot.png").convert("RGBA").resize((120, 120), Image.Resampling.NEAREST)
+            base_img = Image.open("assets\\shoot.png").convert("RGBA").resize((120, 120), Image.Resampling.NEAREST)
             data = list(base_img.get_flattened_data())
             new_data = []
             for item in data:
@@ -559,7 +559,7 @@ class ColorSniper:
         else:
             self.status_label.config(text="장전 완료!", fg="green")
             mixer.init()
-            mixer.music.load('caulk_gun.wav')
+            mixer.music.load('assets\\caulk_gun.wav')
             mixer.music.play()
             self.shake_gun_effect()
             self.add_color_history(self.current_hex)
