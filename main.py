@@ -4,6 +4,7 @@ import pyautogui
 from PIL import Image, ImageTk, ImageDraw
 import keyboard
 import colorsys
+from pygame import mixer
 import sys
 import os
 
@@ -18,6 +19,7 @@ def resource_path(relative_path):
 
 class ColorSniper:
     def __init__(self, root):
+        """창의 기본 설정, 상태 변수 초기화, 오버레이 창 생성, 단축키 등록 및 전체 업데이트 루프"""
         self.root = root
         self.root.title("저격총 스코프 스포이드")
         self.root.geometry("260x540")
@@ -72,6 +74,7 @@ class ColorSniper:
         self.update_loop()
 
     def create_follower_windows(self):
+        """마우스 위치를 따라다니는 두 개의 창 생성 및 초기화: 1) 스코프 창, 2) 조준선 전용 창"""
         # 1. 스코프 창
         self.follower = tk.Toplevel(self.root)
         self.follower.overrideredirect(True)
@@ -109,6 +112,7 @@ class ColorSniper:
         self.cross_follower.withdraw()
 
     def create_crosshair_image(self, size=44):
+        """조준선 이미지를 생성하고 cross_canvas에 표시"""
         img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
         
@@ -128,13 +132,16 @@ class ColorSniper:
         self.cross_canvas.create_image(0, 0, anchor="nw", image=self.tk_cross_img)
 
     def create_fixed_image_window(self):
+        """우측 하단에 고정된 총 이미지 창 생성, 배경 투명화 및 초기 화면 위치 설정"""
         self.fixed_win = tk.Toplevel(self.root)
         self.fixed_win.overrideredirect(True)
         self.fixed_win.attributes("-topmost", True)
         self.fixed_win.config(bg="systemTransparent" if self.root.tk.call('tk', 'windowingsystem') == 'aqua' else "#000001")
         
         try:
-            pil_img = Image.open("python\\colorPicker\\ColorSniper\\gun.png").convert("RGBA")
+            # resource_path 적용
+            gun_path = resource_path(os.path.join("assets", "gun.png"))
+            pil_img = Image.open(gun_path).convert("RGBA")
             self.gun_width, self.gun_height = pil_img.size
             bg_color = (0, 0, 1) 
             
@@ -161,7 +168,7 @@ class ColorSniper:
                 pass
 
             self.base_gun_x = self.screen_width - self.gun_width
-            self.base_gun_y = self.screen_height - self.gun_height - 10
+            self.base_gun_y = self.screen_height - self.gun_height - 48
             self.fixed_win.geometry(f"{self.gun_width}x{self.gun_height}+{self.base_gun_x}+{self.base_gun_y}")
 
         except Exception as e:
@@ -177,6 +184,7 @@ class ColorSniper:
         offsets = [6, -6, 4, -4, 2, -2, 0]
         
         def animate_shake(index=0):
+            """재귀적으로 호출되어 총 이미지의 위치를 좌우로 이동시키며 흔들림 효과를 구현"""
             if index < len(offsets):
                 current_offset = offsets[index]
                 new_x = self.base_gun_x + current_offset
@@ -188,6 +196,7 @@ class ColorSniper:
         animate_shake()
 
     def create_ammo_overlay_window(self):
+        """좌측 하단에 고정된 탄환 오버레이 창 생성, 배경 투명화 및 초기 화면 위치 설정"""
         self.ammo_win = tk.Toplevel(self.root)
         self.ammo_win.overrideredirect(True)
         self.ammo_win.attributes("-topmost", True)
@@ -213,6 +222,7 @@ class ColorSniper:
         self.ammo_win.geometry(f"+{pos_x}+{pos_y}")
 
     def setup_main_ui(self):
+        """메인 UI 구성: 토글 버튼, 상태 표시, 색상 미리보기, 색상 포맷 정보, 최근 탄환 등 표시"""
         tk.Label(
             self.root, 
             text="[Ctrl+Shift+C] 스포이드 / [Ctrl+Shift+X] 발사", 
@@ -297,6 +307,7 @@ class ColorSniper:
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def convert_color_formats(self, hex_code):
+        """16진수 색상 코드를 RGB, HSL, HSV, CMYK 포맷으로 변환하여 문자열로 반환"""
         r = int(hex_code[1:3], 16)
         g = int(hex_code[3:5], 16)
         b = int(hex_code[5:7], 16)
@@ -325,6 +336,7 @@ class ColorSniper:
         return rgb_str, hsl_str, hsv_str, cmyk_str
 
     def update_color_displays(self, hex_code):
+        """현재 색상 정보를 UI에 업데이트: 색상 미리보기, RGB/HSL/HSV/CMYK 라벨, 현재 선택된 색상 저장"""
         self.current_hex = hex_code
         self.hex_var.set(hex_code)
         self.color_preview.config(bg=hex_code)
@@ -336,6 +348,8 @@ class ColorSniper:
         self.cmyk_label.config(text=cmyk_s)
 
     def update_ammo_ui(self):
+        """탄환 UI를 업데이트: 각 탄환 슬롯에 색상 적용, 이미지가 없으면 텍스트로 표시"""
+        ammo_file_path = resource_path(os.path.join("assets", "ammo.png"))
         for i, hex_code in enumerate(self.color_history):
             try:
                 if hex_code == "#FFFFFF":
@@ -343,11 +357,12 @@ class ColorSniper:
                 else:
                     rgb = tuple(int(hex_code[j:j+2], 16) for j in (1, 3, 5))
 
-                if os.path.exists(resource_path("ammo.png")):
-                    ammo_img_main = Image.open(resource_path("ammo.png")).convert("RGBA").resize((20, 38), Image.Resampling.NEAREST)
-                    ammo_img_overlay = Image.open(resource_path("ammo.png")).convert("RGBA").resize((26, 50), Image.Resampling.NEAREST)
-                    
+                if os.path.exists(ammo_file_path):
+                    ammo_img_main = Image.open(ammo_file_path).convert("RGBA").resize((20, 38), Image.Resampling.NEAREST)
+                    ammo_img_overlay = Image.open(ammo_file_path).convert("RGBA").resize((26, 50), Image.Resampling.NEAREST)
+
                     def apply_color(img):
+                        """탄환 이미지의 밝은 부분에만 색상을 적용하고, 흰색이면 투명도를 낮춤"""
                         data = img.get_flattened_data()
                         new_data = []
                         for item in data:
@@ -377,6 +392,7 @@ class ColorSniper:
                 print(f"탄환 이미지 처리 오류: {e}")
 
     def on_ammo_click(self, index):
+        """탄환 슬롯 클릭 시 해당 색상으로 업데이트 및 클립보드 복사"""
         if index < len(self.color_history):
             selected_hex = self.color_history[index]
             self.update_color_displays(selected_hex)
@@ -387,6 +403,7 @@ class ColorSniper:
             self.root.after(1500, lambda: self.status_label.config(text="대기 중...", fg="gray"))
 
     def add_color_history(self, new_hex):
+        """새로운 색상을 최근 탄환 기록에 추가, 중복 제거 및 최대 5개 유지"""
         valid_ammo = [c for c in self.color_history if c != "#FFFFFF"]
         
         if new_hex in valid_ammo:
@@ -404,12 +421,18 @@ class ColorSniper:
         self.update_ammo_ui()
 
     def shoot_ammo(self):
+        """발사 단축키 호출 시 실행: 최근 탄환 중 첫 번째 색상을 발사, 발사 효과 및 반동 애니메이션 처리"""
         valid_ammo = [c for c in self.color_history if c != "#FFFFFF"]
         
         if valid_ammo:
             shot_hex = valid_ammo.pop(0)
             mx, my = pyautogui.position()
             self.show_shoot_effect(mx, my, shot_hex)
+
+            mixer.init()
+            sound_path = resource_path(os.path.join("assets", "sniper_rifle.mp3"))
+            mixer.music.load(sound_path)
+            mixer.music.play()
 
             self.shake_gun_effect()
 
@@ -426,12 +449,18 @@ class ColorSniper:
             self.root.after(1500, lambda: self.status_label.config(text="대기 중...", fg="gray"))
 
     def show_shoot_effect(self, x, y, hex_color):
+        """발사 시 마우스 위치에 발사 효과 창 생성, 색상 적용 및 0.3초 후 자동 제거"""
         shoot_win = tk.Toplevel(self.root)
         shoot_win.overrideredirect(True)
         shoot_win.attributes("-topmost", True)
-        shoot_win.config(bg="systemTransparent" if self.root.tk.call('tk', 'windowingsystem') == 'aqua' else "#000003")
+        
+        # 1. 처음부터 화면에 그리지 않고 숨김 처리
+        shoot_win.withdraw() 
+        
+        bg_color = "systemTransparent" if self.root.tk.call('tk', 'windowingsystem') == 'aqua' else "#000003"
+        shoot_win.config(bg=bg_color)
 
-        canvas = tk.Canvas(shoot_win, width=120, height=120, bg="#000003", highlightthickness=0)
+        canvas = tk.Canvas(shoot_win, width=120, height=120, bg=bg_color, highlightthickness=0)
         canvas.pack()
 
         try:
@@ -446,8 +475,9 @@ class ColorSniper:
         rgb = tuple(int(hex_color[j:j+2], 16) for j in (1, 3, 5))
 
         try:
-            base_img = Image.open(resource_path("shoot.png")).convert("RGBA").resize((120, 120), Image.Resampling.NEAREST)
-            data = base_img.get_flattened_data()
+            shoot_path = resource_path(os.path.join("assets", "shoot.png"))
+            base_img = Image.open(shoot_path).convert("RGBA").resize((120, 120), Image.Resampling.NEAREST)
+            data = list(base_img.get_flattened_data())
             new_data = []
             for item in data:
                 if item[0] > 60 or item[1] > 60 or item[2] > 60:
@@ -465,24 +495,31 @@ class ColorSniper:
             shoot_win.destroy()
             return
 
+        # 2. 모든 설정과 이미지가 준비된 순간 화면에 표시
+        shoot_win.deiconify()
+
         self.root.after(300, shoot_win.destroy)
 
     def on_toggle_scope(self):
+        """스코프 표시 토글 처리: 스포이드 작동 중일 때 스코프 창과 조준선 창의 표시 상태를 전환"""
         pass
 
     def on_toggle_gun(self):
+        """총 이미지 표시 토글 처리: 총 이미지 창의 표시 상태를 전환"""
         if self.show_gun_var.get():
             self.fixed_win.deiconify()
         else:
             self.fixed_win.withdraw()
 
     def on_toggle_ammo(self):
+        """탄환 표시 토글 처리: 탄환 창의 표시 상태를 전환"""
         if self.show_ammo_var.get():
             self.ammo_win.deiconify()
         else:
             self.ammo_win.withdraw()
 
     def create_circular_scope_image(self, pil_image, current_rgb):
+        """스코프 창에 표시할 원형 확대 이미지 생성: 중앙 색상 표시 및 외곽선, 십자선, 탄환 색상 표시"""
         size = self.scope_size
         img_resized = pil_image.resize((size, size), Image.Resampling.NEAREST).convert("RGBA")
         
@@ -520,22 +557,29 @@ class ColorSniper:
         return Image.alpha_composite(img_resized, overlay)
 
     def toggle_picking(self):
+        """스포이드 작동 토글: 작동 중이면 중지, 중지 상태면 작동 시작"""
         self.is_picking = not self.is_picking
         if self.is_picking:
             self.status_label.config(text="● 조준 스포이드 작동 중...", fg="red")
         else:
             self.status_label.config(text="장전 완료!", fg="green")
+            mixer.init()
+            sound_path = resource_path(os.path.join("assets", "caulk_gun.wav"))
+            mixer.music.load(sound_path)
+            mixer.music.play()
             self.shake_gun_effect()
             self.add_color_history(self.current_hex)
             self.copy_to_clipboard()
 
     def copy_to_clipboard(self):
+        """현재 선택된 색상을 클립보드에 복사하고 상태 표시 업데이트"""
         self.root.clipboard_clear()
         self.root.clipboard_append(self.current_hex)
         self.status_label.config(text="클립보드 복사됨!", fg="blue")
         self.root.after(1000, lambda: self.status_label.config(text="대기 중...", fg="green" if not self.is_picking else "red"))
 
     def update_loop(self):
+        """30ms마다 호출되는 업데이트 루프: 마우스 위치 추적, 스코프/조준선 위치 업데이트, 색상 추출 및 UI 동기화"""
         x, y = pyautogui.position()
         offset = self.crosshair_size // 2
 
@@ -588,11 +632,12 @@ class ColorSniper:
         self.root.after(30, self.update_loop)
 
     def on_close(self):
+        """프로그램 종료 시 호출: 단축키 해제 및 창 종료"""
         keyboard.unhook_all()
         self.root.destroy()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     root = tk.Tk()
     app = ColorSniper(root)
     root.mainloop()
