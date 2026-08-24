@@ -348,7 +348,7 @@ class ColorSniper:
                     ammo_img_overlay = Image.open(resource_path("ammo.png")).convert("RGBA").resize((26, 50), Image.Resampling.NEAREST)
                     
                     def apply_color(img):
-                        data = img.getdata()
+                        data = img.get_flattened_data()
                         new_data = []
                         for item in data:
                             if item[0] > 60 or item[1] > 60 or item[2] > 60:
@@ -447,7 +447,7 @@ class ColorSniper:
 
         try:
             base_img = Image.open(resource_path("shoot.png")).convert("RGBA").resize((120, 120), Image.Resampling.NEAREST)
-            data = base_img.getdata()
+            data = base_img.get_flattened_data()
             new_data = []
             for item in data:
                 if item[0] > 60 or item[1] > 60 or item[2] > 60:
